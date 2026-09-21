@@ -7,6 +7,10 @@
 
 #include <curl/curl.h>
 
+#if defined(PLATFORM_XBOX360)
+struct curl_mime;
+#endif
+
 namespace cpr {
 struct CurlHolder {
   private:

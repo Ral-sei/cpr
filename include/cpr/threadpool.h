@@ -1,6 +1,29 @@
 #ifndef CPR_THREAD_POOL_H
 #define CPR_THREAD_POOL_H
 
+#if defined(PLATFORM_XBOX360)
+#include <cstddef>
+namespace cpr {
+class ThreadPool {
+public:
+    explicit ThreadPool(size_t = 1, size_t = 1, int = 0) {}
+    virtual ~ThreadPool() = default;
+    void SetMinThreadNum(size_t) {}
+    void SetMaxThreadNum(size_t) {}
+    void SetMaxIdleTime(int) {}
+    size_t GetCurrentThreadNum() { return 0; }
+    size_t GetIdleThreadNum() { return 0; }
+    bool IsStarted() { return false; }
+    bool IsStopped() { return true; }
+    int Start(size_t = 0) { return 0; }
+    int Stop() { return 0; }
+    int Pause() { return 0; }
+    int Resume() { return 0; }
+    int Wait() { return 0; }
+};
+}
+#else
+
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -120,3 +143,5 @@ class ThreadPool {
 } // namespace cpr
 
 #endif
+
+#endif // PLATFORM_XBOX360

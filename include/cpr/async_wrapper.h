@@ -1,6 +1,50 @@
 #ifndef CPR_ASYNC_WRAPPER_H
 #define CPR_ASYNC_WRAPPER_H
 
+#if defined(PLATFORM_XBOX360)
+#include <memory>
+#include <utility>
+
+namespace cpr {
+enum class [[nodiscard]] CancellationResult { failure, success, invalid_operation };
+
+template <typename T, bool isCancellable = false>
+class AsyncWrapper {
+    T value{};
+    bool valid_ = true;
+public:
+    explicit AsyncWrapper(T&& v) : value(std::move(v)) {}
+    explicit AsyncWrapper(const T& v) : value(v) {}
+    AsyncWrapper(const AsyncWrapper&) = delete;
+    AsyncWrapper& operator=(const AsyncWrapper&) = delete;
+    AsyncWrapper(AsyncWrapper&&) noexcept = default;
+    AsyncWrapper& operator=(AsyncWrapper&&) noexcept = default;
+    T get() { valid_ = false; return std::move(value); }
+    bool valid() const noexcept { return valid_; }
+    void wait() const noexcept {}
+    CancellationResult Cancel() { valid_ = false; return CancellationResult::success; }
+    bool IsCancelled() const noexcept { return !valid_; }
+};
+
+template <bool isCancellable>
+class AsyncWrapper<void, isCancellable> {
+    bool valid_ = true;
+public:
+    AsyncWrapper() noexcept = default;
+    AsyncWrapper(const AsyncWrapper&) = delete;
+    AsyncWrapper& operator=(const AsyncWrapper&) = delete;
+    AsyncWrapper(AsyncWrapper&&) noexcept = default;
+    AsyncWrapper& operator=(AsyncWrapper&&) noexcept = default;
+    void get() noexcept { valid_ = false; }
+    bool valid() const noexcept { return valid_; }
+    void wait() const noexcept {}
+    CancellationResult Cancel() noexcept { valid_ = false; return CancellationResult::success; }
+    bool IsCancelled() const noexcept { return !valid_; }
+};
+}
+
+#else
+
 #include <atomic>
 #include <future>
 #include <memory>
@@ -138,3 +182,5 @@ AsyncWrapper(std::future<T>&&, std::shared_ptr<std::atomic_bool>&&) -> AsyncWrap
 
 
 #endif
+
+#endif // PLATFORM_XBOX360

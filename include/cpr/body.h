@@ -30,7 +30,11 @@ class Body : public StringHolder<Body> {
     Body(const File& file) {
         std::ifstream is(file.filepath, std::ifstream::binary);
         if (!is) {
+#if defined(PLATFORM_XBOX360)
+            return;
+#else
             throw std::invalid_argument("Can't open the file for HTTP request body!");
+#endif
         }
 
         is.seekg(0, std::ios::end);
