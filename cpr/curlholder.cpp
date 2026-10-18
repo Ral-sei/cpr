@@ -21,7 +21,9 @@ CurlHolder::CurlHolder() {
 CurlHolder::~CurlHolder() {
     curl_slist_free_all(chunk);
     curl_slist_free_all(resolveCurlList);
+#if LIBCURL_VERSION_NUM >= 0x073800
     curl_mime_free(multipart);
+#endif
     curl_easy_cleanup(handle);
 }
 

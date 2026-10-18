@@ -2,44 +2,54 @@
 #define CPR_ASYNC_WRAPPER_H
 
 #if defined(PLATFORM_XBOX360)
-#include <memory>
 #include <utility>
+#include <type_traits>
+#include <xtl.h>
 
 namespace cpr {
 enum class [[nodiscard]] CancellationResult { failure, success, invalid_operation };
 
 template <typename T, bool isCancellable = false>
 class AsyncWrapper {
-    T value{};
-    bool valid_ = true;
+    struct State {
+        T value{};
+        volatile LONG ready = 0;
+        volatile LONG cancelled = 0;
+    };
+    State* state_;
 public:
-    explicit AsyncWrapper(T&& v) : value(std::move(v)) {}
-    explicit AsyncWrapper(const T& v) : value(v) {}
-    AsyncWrapper(const AsyncWrapper&) = delete;
-    AsyncWrapper& operator=(const AsyncWrapper&) = delete;
+    AsyncWrapper() : state_(new State()) {}
+    AsyncWrapper(const AsyncWrapper&) = default;
+    AsyncWrapper& operator=(const AsyncWrapper&) = default;
     AsyncWrapper(AsyncWrapper&&) noexcept = default;
     AsyncWrapper& operator=(AsyncWrapper&&) noexcept = default;
-    T get() { valid_ = false; return std::move(value); }
-    bool valid() const noexcept { return valid_; }
-    void wait() const noexcept {}
-    CancellationResult Cancel() { valid_ = false; return CancellationResult::success; }
-    bool IsCancelled() const noexcept { return !valid_; }
+    T get() {
+        while (state_ && !state_->ready) Sleep(1);
+        if (!state_ || state_->cancelled) return T{};
+        return std::move(state_->value);
+    }
+    bool valid() const noexcept { return state_ && !state_->cancelled; }
+    void wait() const noexcept { while (state_ && !state_->ready) Sleep(1); }
+    CancellationResult Cancel() { if (state_) InterlockedExchange(&state_->cancelled, 1); return CancellationResult::success; }
+    bool IsCancelled() const noexcept { return !state_ || state_->cancelled; }
+
+    template <class Fn> void complete(Fn&& fn) { state_->value = fn(); InterlockedExchange(&state_->ready, 1); }
 };
 
 template <bool isCancellable>
 class AsyncWrapper<void, isCancellable> {
-    bool valid_ = true;
 public:
     AsyncWrapper() noexcept = default;
-    AsyncWrapper(const AsyncWrapper&) = delete;
-    AsyncWrapper& operator=(const AsyncWrapper&) = delete;
+    AsyncWrapper(const AsyncWrapper&) = default;
+    AsyncWrapper& operator=(const AsyncWrapper&) = default;
     AsyncWrapper(AsyncWrapper&&) noexcept = default;
     AsyncWrapper& operator=(AsyncWrapper&&) noexcept = default;
-    void get() noexcept { valid_ = false; }
-    bool valid() const noexcept { return valid_; }
+    void get() noexcept {}
+    bool valid() const noexcept { return true; }
     void wait() const noexcept {}
-    CancellationResult Cancel() noexcept { valid_ = false; return CancellationResult::success; }
-    bool IsCancelled() const noexcept { return !valid_; }
+    CancellationResult Cancel() noexcept { return CancellationResult::success; }
+    bool IsCancelled() const noexcept { return false; }
+    template <class Fn> void complete(Fn&& fn) { fn(); }
 };
 }
 

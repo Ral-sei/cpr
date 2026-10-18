@@ -2,6 +2,24 @@
 #define CPR_THREAD_POOL_H
 
 #if defined(PLATFORM_XBOX360)
+// Xbox 360: placeholder only — nothing on this platform runs the real pool.
+//
+// cpr/cpr/threadpool.cpp and cpr/cpr/async.cpp are filtered out of the Xbox
+// build (library/CMakeLists.txt), and async() has its own Xbox implementation
+// in <cpr/async.h> that spawns a raw CreateThread behind a 4-slot gate instead
+// of Submit()ting to a GlobalThreadPool. So the only thing this class still
+// owes us is a declaration: any TU that force-includes <cpr/threadpool.h>
+// (see target_compile_options(cpr ... -include)) must still see a ThreadPool.
+//
+// Keep it inert. Two things depend on that:
+//   * cpr::async::startup()/cleanup() are no-ops here and must stay so.
+//   * priv::setup_multiasync() in <cpr/api.h> references
+//     GlobalThreadPool::GetInstance()->Submit(), which does not exist in the
+//     Xbox <cpr/async.h>. That template is never instantiated by wiliwili —
+//     only library/cpr/test/ uses *Async()/Multi*Async() — but if anyone ever
+//     calls one on Xbox it fails to compile, which is the intended outcome
+//     rather than silently doing nothing.
+// This stub has no Submit(), so it cannot silently swallow work either.
 #include <cstddef>
 namespace cpr {
 class ThreadPool {

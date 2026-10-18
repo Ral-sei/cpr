@@ -378,6 +378,9 @@ void Session::SetProxyAuth(const ProxyAuthentication& proxy_auth) {
 }
 
 void Session::SetMultipart(const Multipart& multipart) {
+    (void)multipart;
+    return;
+#if 0
     // Make sure, we have a empty multipart to start with:
     if (curl_->multipart) {
         curl_mime_free(curl_->multipart);
@@ -419,6 +422,7 @@ void Session::SetMultipart(const Multipart& multipart) {
 
     curl_easy_setopt(curl_->handle, CURLOPT_MIMEPOST, curl_->multipart);
     hasBodyOrPayload_ = true;
+#endif
 }
 
 void Session::SetMultipart(Multipart&& multipart) {
@@ -472,7 +476,11 @@ void Session::SetVerifySsl(const VerifySsl& verify) {
 }
 
 void Session::SetUnixSocket(const UnixSocket& unix_socket) {
+#if LIBCURL_VERSION_NUM >= 0x073300
     curl_easy_setopt(curl_->handle, CURLOPT_UNIX_SOCKET_PATH, unix_socket.GetUnixSocketString());
+#else
+    (void)unix_socket;
+#endif
 }
 
 void Session::SetSslOptions(const SslOptions& options) {
@@ -507,7 +515,9 @@ void Session::SetSslOptions(const SslOptions& options) {
 #endif
     }
     if (!options.pinned_public_key.empty()) {
+#if LIBCURL_VERSION_NUM >= 0x073500
         curl_easy_setopt(curl_->handle, CURLOPT_PINNEDPUBLICKEY, options.pinned_public_key.c_str());
+#endif
     }
 #if SUPPORT_ALPN
     curl_easy_setopt(curl_->handle, CURLOPT_SSL_ENABLE_ALPN, options.enable_alpn ? ON : OFF);
@@ -670,7 +680,13 @@ cpr_off_t Session::GetDownloadFileLength() {
         long status_code{};
         curl_easy_getinfo(curl_->handle, CURLINFO_RESPONSE_CODE, &status_code);
         if (200 == status_code) {
+#if LIBCURL_VERSION_NUM >= 0x073700
             curl_easy_getinfo(curl_->handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &downloadFileLenth);
+#else
+            double content_length = 0;
+            curl_easy_getinfo(curl_->handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &content_length);
+            downloadFileLenth = static_cast<cpr_off_t>(content_length);
+#endif
         }
     }
     return downloadFileLenth;

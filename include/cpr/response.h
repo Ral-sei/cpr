@@ -32,6 +32,9 @@ class Response {
     Header header{};
     Url url{};
     double elapsed{};
+    /* 对端 IP（CURLINFO_PRIMARY_IP）。失败排查用：连错了 IP 说明 DNS 解析
+       被并发调用互相覆盖，连对了还失败才是 TLS/服务端的问题。 */
+    std::string ip_address{};
     Cookies cookies{};
     Error error{};
     std::string raw_header{};

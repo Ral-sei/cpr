@@ -10,6 +10,10 @@
 #include "cpr/cprtypes.h"
 #include "cpr/curlholder.h"
 
+#ifndef CURL_PROGRESSFUNC_CONTINUE
+#define CURL_PROGRESSFUNC_CONTINUE 0
+#endif
+
 namespace cpr::util {
 
 Header parseHeader(const std::string& headers, std::string* status_line = nullptr, std::string* reason = nullptr);

@@ -8,6 +8,10 @@ Response::Response(std::shared_ptr<CurlHolder> curl, std::string&& p_text, std::
     assert(curl_->handle);
     curl_easy_getinfo(curl_->handle, CURLINFO_RESPONSE_CODE, &status_code);
     curl_easy_getinfo(curl_->handle, CURLINFO_TOTAL_TIME, &elapsed);
+    /* 本版 curl 的 CURLINFO_* 字符串型返回的是 curl 内部缓冲区的指针 */
+    char* ip_string{nullptr};
+    curl_easy_getinfo(curl_->handle, CURLINFO_PRIMARY_IP, &ip_string);
+    ip_address = ip_string ? std::string{ip_string} : std::string{};
     char* url_string{nullptr};
     curl_easy_getinfo(curl_->handle, CURLINFO_EFFECTIVE_URL, &url_string);
     url = Url(url_string);
